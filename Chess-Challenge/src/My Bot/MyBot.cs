@@ -12,8 +12,8 @@ public class MyBot : IChessBot
     int takenPieces = 0;
     int lostPieces = 0;
     int counterRochade = 0;
-    String lastMove;
-    String[,] eroeffnung = new string[,] {  {"g1f3","b1c3","e2e4","d2d4","f1d3","c1e3","e1g1"} , {"g8f6", "b8c6","d7d5","e7e5","f8d6","c8e6","e8g8"}  };
+    Move? lastMove;
+    string[,] eroeffnung = new string[,] {  {"g1f3","b1c3","e2e4","d2d4","f1d3","c1e3","e1g1"} , {"g8f6", "b8c6","d7d5","e7e5","f8d6","c8e6","e8g8"}  };
     public Move Think(Board board, Timer timer)
     {
         Move[] allMoves = board.GetLegalMoves();
@@ -34,22 +34,29 @@ public class MyBot : IChessBot
         //Valider Zug
         if (!bestCapture.IsNull) {
             if (bestCapture.MovePieceType != PieceType.Pawn) {
-                lastMove = bestCapture.TargetSquare.Name + bestCapture.StartSquare.Name;
+                lastMove = bestCapture;
+            } else
+            {
+                lastMove = null;
             }
             return bestCapture;
+        } else
+        {
+            lastMove = null;
         }
 
         //Routine für Rochade, fester Ablauf, je nach Farbe
-        if (counterRochade < eroeffnung.Length) {
+        if (counterRochade < eroeffnung.GetLength(1)) {
             //Hat eine Figur während der Rochade geschlagen und wird vom Gegner bedroht, wird der Zug zurückgenommen
-            if (lastMove is not null && board.SquareIsAttackedByOpponent(new Square(lastMove.Substring(0,2)))) {
-                Move moveTemp = new Move(lastMove, board);
-                return moveTemp;
+            if (lastMove is not null && board.SquareIsAttackedByOpponent(lastMove.Value.TargetSquare)) {
+                Move retreat = allMoves.Where(move => move.TargetSquare == lastMove.Value.StartSquare && move.StartSquare == lastMove.Value.TargetSquare).FirstOrDefault();
+                if(!retreat.IsNull)return retreat;
             }
             int farbe = board.IsWhiteToMove ? 0 : 1;
-            Move moveRochade = new Move(eroeffnung[farbe ,counterRochade], board);
+            string code = eroeffnung[farbe, counterRochade];            
+            Move moveRochade = allMoves.Where(move => move.StartSquare.Name == code.Substring(0, 2) && move.TargetSquare.Name == code.Substring(2, 2)).FirstOrDefault();
             counterRochade++;
-            return moveRochade;
+            if(!moveRochade.IsNull) return moveRochade;
         }
 
 
