@@ -53,28 +53,19 @@ public class MyBot : IChessBot
         //altes targetsquare == neues startsquare, für das neue startsquare prüfen ob als targetsquare ein unprotected square ist
         foreach (Move movey in allMoves)
         {
-            String neuerStartSquare = movey.TargetSquare.Name;
+            string neuerStartSquare = movey.TargetSquare.Name;
             board.MakeMove(movey);
             //Zug muss übersprungen werden, um unsere Moves zu kriegen
             bool erfolgreich = board.TrySkipTurn();
             //GegnerMoves
             Move[] neueMoves = board.GetLegalMoves();
             if(erfolgreich) board.UndoSkipTurn();
-            foreach (Move movex in neueMoves)
-            {
-                if (movex.StartSquare.Name == neuerStartSquare)
-                {
-                    foreach (Move movez in unprotected)
-                    {
-                        if (movex.TargetSquare.Name == movez.StartSquare.Name)
-                        {
-                            board.UndoMove(movey);
-                            return movey;
-                        }
-                    }
-                }
-            }
+            var hasMove = neueMoves
+                .Where(move => move.StartSquare.Name == neuerStartSquare)
+                .Where(move => unprotected.Select(u => u.StartSquare.Name).Contains(move.TargetSquare.Name))
+                .Any();
             board.UndoMove(movey);
+            if (hasMove) return movey;
         }
 
         var protectedTargetSquare = unprotected
