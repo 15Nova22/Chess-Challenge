@@ -36,7 +36,7 @@ public class MyBot : IChessBot
         //Moves mit ungeschütztem StartSquare
         var unprotected = allMoves
             .Where(move => board.SquareIsAttackedByOpponent(move.StartSquare))
-            .Where(move => !isProtected(move.StartSquare, allMoves, board)).OrderByDescending(move => pieceValues[(int)move.MovePieceType]).ToArray();
+            .Where(move => !IsProtected(move, board)).OrderByDescending(move => pieceValues[(int)move.MovePieceType]).ToArray();
 
         if(!bestCapture.IsNull && isWorthToTrade(bestCapture, unprotected.FirstOrDefault()))
         {
@@ -119,9 +119,22 @@ public class MyBot : IChessBot
         return pieceValues[(int)move.CapturePieceType] - (board.SquareIsAttackedByOpponent(move.TargetSquare) ? pieceValues[(int)move.MovePieceType] : 0);
     }
 
-    bool isProtected(Square target, Move[] moves, Board board)
+    bool IsProtected(Move moveWithTarget, Board board)
     {
-        return moves.Where(move => move.TargetSquare == target).Any();
+        if(board.TrySkipTurn())
+        {
+            var enemyMove = board.GetLegalMoves(true).Where(move => move.TargetSquare == moveWithTarget.StartSquare).FirstOrDefault();
+            if(!enemyMove.IsNull)
+            {
+                board.MakeMove(enemyMove);
+                var hasCounterMoves = board.GetLegalMoves(true).Where(move => move.TargetSquare == moveWithTarget.StartSquare).Any();
+                board.UndoMove(enemyMove);
+                board.UndoSkipTurn();
+                return hasCounterMoves;
+            }
+
+        }
+        return false;
     }
 
     bool isWorthToTrade(Move bestCapture, Move isAttacked)
