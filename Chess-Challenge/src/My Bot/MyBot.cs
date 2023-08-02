@@ -34,7 +34,13 @@ public class MyBot : IChessBot
 
         //TODO Save attacked pieces
         //Moves mit ungeschütztem StartSquare
+
+        board.MakeMove(bestCapture);
+        var enemyTargets = board.GetLegalMoves(true).Select(move => move.TargetSquare);
+        board.UndoMove(bestCapture);
+
         var unprotected = allMoves
+            .Where(move => enemyTargets.Contains(move.StartSquare))
             .Where(move => board.SquareIsAttackedByOpponent(move.StartSquare))
             .Where(move => !IsProtected(move, board)).OrderByDescending(move => pieceValues[(int)move.MovePieceType]).ToArray();
 
