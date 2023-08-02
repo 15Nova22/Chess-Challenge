@@ -36,7 +36,7 @@ public class MyBot : IChessBot
         //Moves mit ungeschütztem StartSquare
 
         board.MakeMove(bestCapture);
-        var enemyTargets = board.GetLegalMoves(true).Select(move => move.TargetSquare);
+        var enemyTargets = board.GetLegalMoves(true).Select(move => move.TargetSquare).ToArray();
         board.UndoMove(bestCapture);
 
         var unprotected = allMoves
