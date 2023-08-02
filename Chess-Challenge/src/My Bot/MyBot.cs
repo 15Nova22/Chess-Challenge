@@ -14,10 +14,6 @@ public class MyBot : IChessBot
     public Move Think(Board board, Timer timer)
     {
         Move[] allMoves = board.GetLegalMoves();
-        foreach(Move test in allMoves)
-        {
-            Console.WriteLine(test.StartSquare.Name);
-        }
 
         //Array mit möglichen Zügen zum schlagen, wenn schlagen möglich ist, wird geschlagen
         Move[] captureMoves = board.GetLegalMoves(true);
@@ -35,14 +31,17 @@ public class MyBot : IChessBot
         //TODO Save attacked pieces
         //Moves mit ungeschütztem StartSquare
 
+        //Bildet ein Array aus Gegner Moves, die schlagen können
         board.MakeMove(bestCapture);
         var enemyTargets = board.GetLegalMoves(true).Select(move => move.TargetSquare).ToArray();
         board.UndoMove(bestCapture);
 
+        //Vergleicht unsere Legal Moves mit den SchlagMoves des Gegners und überprüft, ob diese Protected sind 
         var unprotected = allMoves
             .Where(move => enemyTargets.Contains(move.StartSquare))
             .Where(move => board.SquareIsAttackedByOpponent(move.StartSquare))
             .Where(move => !IsProtected(move, board)).OrderByDescending(move => pieceValues[(int)move.MovePieceType]).ToArray();
+       
 
         if(!bestCapture.IsNull && isWorthToTrade(bestCapture, unprotected.FirstOrDefault()))
         {
@@ -60,10 +59,28 @@ public class MyBot : IChessBot
             //GegnerMoves
             Move[] neueMoves = board.GetLegalMoves();
             if(erfolgreich) board.UndoSkipTurn();
+<<<<<<< Updated upstream
             var hasMove = neueMoves
                 .Where(move => move.StartSquare.Name == neuerStartSquare)
                 .Where(move => unprotected.Select(u => u.StartSquare.Name).Contains(move.TargetSquare.Name))
                 .Any();
+=======
+            foreach (Move movex in neueMoves)
+            {
+                if (movex.StartSquare.Name == neuerStartSquare)
+                {
+                    foreach (Move movez in unprotected)
+                    {
+                        if (movex.TargetSquare.Name == movez.StartSquare.Name && !board.SquareIsAttackedByOpponent(movey.TargetSquare))
+                        {
+                            Console.WriteLine(movey.StartSquare.Name + movey.TargetSquare.Name);
+                            board.UndoMove(movey);
+                            return movey;
+                        }
+                    }
+                }
+            }
+>>>>>>> Stashed changes
             board.UndoMove(movey);
             if (hasMove) return movey;
         }
@@ -110,9 +127,13 @@ public class MyBot : IChessBot
     /// </returns>
     int TradeValue(Board board, Move move)
     {
+        Console.WriteLine("   ");
+        Console.WriteLine(move.StartSquare.Name + move.TargetSquare.Name);
         Console.WriteLine("MovePieceType" + pieceValues[(int)move.MovePieceType]);
         Console.WriteLine("CapturePieceValue" + pieceValues[(int)move.CapturePieceType]);
         Console.WriteLine("ANGRIFF" + board.SquareIsAttackedByOpponent(move.TargetSquare));
+        var tempValue = pieceValues[(int)move.CapturePieceType] - (board.SquareIsAttackedByOpponent(move.TargetSquare) ? pieceValues[(int)move.MovePieceType] : 0);
+        Console.WriteLine(tempValue);
         return pieceValues[(int)move.CapturePieceType] - (board.SquareIsAttackedByOpponent(move.TargetSquare) ? pieceValues[(int)move.MovePieceType] : 0);
     }
 
@@ -129,7 +150,7 @@ public class MyBot : IChessBot
                 board.UndoSkipTurn();
                 return hasCounterMoves;
             }
-
+            board.UndoSkipTurn();
         }
         return false;
     }
