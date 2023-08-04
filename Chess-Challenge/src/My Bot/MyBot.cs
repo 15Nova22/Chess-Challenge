@@ -16,7 +16,14 @@ public class MyBot : IChessBot
         Move[] allMoves = board.GetLegalMoves();
         Console.WriteLine(allMoves.Length);
         //ToDo direkt alle rausfilter, die beim ziehen zu nem Draw führen würden, damit später nicht auf isDraw überprüft werden muss
-        allMoves = allMoves.Where(move => !board.IsDraw()).ToArray();
+        allMoves = allMoves.Where(move => {
+            board.MakeMove(move); 
+            var isNotDraw = !board.IsDraw(); 
+            board.UndoMove(move); 
+            return isNotDraw; 
+        })
+        .ToArray();
+
         Console.WriteLine(allMoves.Length);
 
         //Array mit möglichen Zügen zum schlagen, wenn schlagen möglich ist, wird geschlagen
@@ -82,28 +89,12 @@ public class MyBot : IChessBot
             //GegnerMoves
             Move[] neueMoves = board.GetLegalMoves();
             if(temp) board.UndoSkipTurn();
-//<<<<<<< Updated upstream //Hier villeicht sparen? ist das doppelt mit der foreach darunter?
 
             var hasMove = neueMoves
                 .Where(move => move.StartSquare.Name == neuerStartSquare)
                 .Where(move => unprotected.Select(u => u.StartSquare.Name).Contains(move.TargetSquare.Name))
                 .Any();
-//=======
-            foreach (Move movex in neueMoves)
-            {
-                if (movex.StartSquare.Name == neuerStartSquare)
-                {
-                    foreach (Move movez in unprotected)
-                    {
-                        if (movex.TargetSquare.Name == movez.StartSquare.Name && !board.SquareIsAttackedByOpponent(movey.TargetSquare) && !board.IsDraw())
-                        {
-                            board.UndoMove(movey);
-                            return movey;
-                        }
-                    }
-                }
-            }
-//>>>>>>> Stashed changes
+
             board.UndoMove(movey);
             if (hasMove)
             {
@@ -140,20 +131,18 @@ public class MyBot : IChessBot
             boardTemp = board;
             Move[] gegnerMoves = board.GetLegalMoves();
             board.UndoMove(movex);
-            if (gegnerMoves.Length < laengeArrayGegnerMoves && !board.SquareIsAttackedByOpponent(movex.TargetSquare) /*&& !board.IsRepeatedPosition()*/ && !boardTemp.IsDraw())
+            if (gegnerMoves.Length < laengeArrayGegnerMoves && !board.SquareIsAttackedByOpponent(movex.TargetSquare) && !boardTemp.IsDraw())
             {   
                 laengeArrayGegnerMoves = gegnerMoves.Length;
                 movetemp = movex;
-                if (pieceValues[(int)movex.CapturePieceType] == 10000 && boardTemp.IsInCheckmate())
-                {
-                    return movex;
-                }
+
                 if (pieceValues[(int)movex.CapturePieceType] == 10000)
                 {
                     return movex;
                 }
             }
         }
+
         if(movetemp != allMoves.FirstOrDefault() && !boardTemp.IsDraw())
         {
             return movetemp;
