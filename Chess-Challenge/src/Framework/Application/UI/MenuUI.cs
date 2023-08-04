@@ -25,9 +25,9 @@ namespace ChessChallenge.Application
             {
                 controller.StartNewBotMatch(ChallengeController.PlayerType.MyBot, ChallengeController.PlayerType.MyBot);
             }
-            if (NextButtonInRow("MyBot vs EvilBot", ref buttonPos, spacing, buttonSize))
+            if (NextButtonInRow("MyBot vs V1", ref buttonPos, spacing, buttonSize))
             {
-                controller.StartNewBotMatch(ChallengeController.PlayerType.MyBot, ChallengeController.PlayerType.EvilBot);
+                controller.StartNewBotMatch(ChallengeController.PlayerType.MyBot, ChallengeController.PlayerType.V1);
             }
 
             // Page buttons
