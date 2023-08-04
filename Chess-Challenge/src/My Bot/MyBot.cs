@@ -39,9 +39,6 @@ public class MyBot : IChessBot
         ).FirstOrDefault();
 
 
-        //TODO Save attacked pieces
-        //Moves mit ungeschütztem StartSquare
-
         //Bildet ein Array aus Gegner Moves, die schlagen können
         board.MakeMove(bestCapture);
         var enemyTargets = board.GetLegalMoves(true).Select(move => move.TargetSquare).ToArray();
@@ -49,6 +46,7 @@ public class MyBot : IChessBot
         var gegnerZiele = board.GetLegalMoves(true).Where(move => pieceValues[(int)move.CapturePieceType] == 900).ToArray();
         if (board.TrySkipTurn()) board.UndoSkipTurn();
 
+        //Moves mit ungeschütztem StartSquare
         //Vergleicht unsere Legal Moves mit den SchlagMoves des Gegners und überprüft, ob diese Protected sind 
         var unprotected = allMoves
             .Where(move => enemyTargets.Contains(move.StartSquare))
@@ -94,7 +92,6 @@ public class MyBot : IChessBot
                 .Where(move => move.StartSquare.Name == neuerStartSquare)
                 .Where(move => unprotected.Select(u => u.StartSquare.Name).Contains(move.TargetSquare.Name))
                 .Any();
-
             board.UndoMove(movey);
             if (hasMove)
             {
@@ -157,11 +154,6 @@ public class MyBot : IChessBot
             return saveMoves[rng.Next(saveMoves.Length)];
         }
 
-        var movesRandomSafe = allMoves.Where(move => !board.SquareIsAttackedByOpponent(move.TargetSquare)).Where(move => !board.IsDraw()).ToArray();
-        if(movesRandomSafe.Length > 0)
-        {
-            return movesRandomSafe[rng.Next(movesRandomSafe.Length)];
-        }
         return allMoves[rng.Next(allMoves.Length)];
     }
 
@@ -195,6 +187,7 @@ public class MyBot : IChessBot
         }
         return false;
     }
+
     bool isWorthToTrade(Move bestCapture, Move isAttacked)
     {
         int valueBestCapture = pieceValues[(int)bestCapture.CapturePieceType];
