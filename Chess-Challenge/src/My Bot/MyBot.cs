@@ -71,7 +71,7 @@ public class MyBot : IChessBot
         }
 
 
-        if(!bestCapture.IsNull && isWorthToTrade(bestCapture, unprotected.FirstOrDefault()) && !board.SquareIsAttackedByOpponent(bestCapture.TargetSquare))
+        if(!bestCapture.IsNull && IsWorthToTrade(bestCapture, unprotected.FirstOrDefault()) && !board.SquareIsAttackedByOpponent(bestCapture.TargetSquare))
         {
             return bestCapture;
         }
@@ -189,7 +189,7 @@ public class MyBot : IChessBot
         return false;
     }
 
-    bool isWorthToTrade(Move bestCapture, Move isAttacked)
+    bool IsWorthToTrade(Move bestCapture, Move isAttacked)
     {
         int valueBestCapture = pieceValues[(int)bestCapture.CapturePieceType];
         int valueBeschuetzen = pieceValues[(int)isAttacked.MovePieceType];
