@@ -93,19 +93,13 @@ public class MyBot : IChessBot
                 .Where(move => unprotected.Select(u => u.StartSquare.Name).Contains(move.TargetSquare.Name))
                 .Any();
             board.UndoMove(movey);
-            if (hasMove)
-            {
-                return movey;
-            }
+            if (hasMove) return movey;
         }
 
         var protectedTargetSquare = unprotected
             .Where(move => !board.SquareIsAttackedByOpponent(move.TargetSquare)).FirstOrDefault();
 
-        if (!protectedTargetSquare.IsNull && !board.IsDraw())
-        {
-            return protectedTargetSquare;
-        }
+        if (!protectedTargetSquare.IsNull && !board.IsDraw()) return protectedTargetSquare;
 
 
         //Routine für Rochade, fester Ablauf, je nach Farbe
