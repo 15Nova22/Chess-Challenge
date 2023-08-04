@@ -14,7 +14,6 @@ public class MyBot : IChessBot
     public Move Think(Board board, Timer timer)
     {
         Move[] allMoves = board.GetLegalMoves();
-        Console.WriteLine(allMoves.Length);
         //ToDo direkt alle rausfilter, die beim ziehen zu nem Draw führen würden, damit später nicht auf isDraw überprüft werden muss
         allMoves = allMoves.Where(move => {
             board.MakeMove(move); 
@@ -23,8 +22,6 @@ public class MyBot : IChessBot
             return isNotDraw; 
         })
         .ToArray();
-
-        Console.WriteLine(allMoves.Length);
 
         //Array mit möglichen Zügen zum schlagen, wenn schlagen möglich ist, wird geschlagen
         Move[] captureMoves = board.GetLegalMoves(true);
@@ -42,34 +39,37 @@ public class MyBot : IChessBot
         //Bildet ein Array aus Gegner Moves, die schlagen können
         board.MakeMove(bestCapture);
         var enemyTargets = board.GetLegalMoves(true).Select(move => move.TargetSquare).ToArray();
+        Move[] gegnerStartAngriff = board.GetLegalMoves(true);
         board.UndoMove(bestCapture);
-        var gegnerZiele = board.GetLegalMoves(true).Where(move => pieceValues[(int)move.CapturePieceType] == 900).ToArray();
-        if (board.TrySkipTurn()) board.UndoSkipTurn();
+
+        //Abschnitt, der die Dame ausser Gefahr bringen sollen
+        if (board.TrySkipTurn())
+        {
+            var gegnerDamenZiele = board.GetLegalMoves(true).Where(move => pieceValues[(int)move.CapturePieceType] == 900).ToArray();
+            board.UndoSkipTurn();
+            if (gegnerDamenZiele.Length > 0)
+            {
+                var dameIstSicher = allMoves.Where(move => !board.SquareIsAttackedByOpponent(move.TargetSquare)).Where(move => pieceValues[(int)move.MovePieceType] == 900).ToArray();
+                foreach (Move move in dameIstSicher)
+                {
+                    board.MakeMove(move);
+                    if (captureMoves.Contains(move) && !board.SquareIsAttackedByOpponent(move.TargetSquare))
+                    {
+                        board.UndoMove(move);
+                        return move;
+                    }
+                    board.UndoMove(move);
+                }
+                return dameIstSicher.FirstOrDefault();
+            }
+        }
 
         //Moves mit ungeschütztem StartSquare
         //Vergleicht unsere Legal Moves mit den SchlagMoves des Gegners und überprüft, ob diese Protected sind 
         var unprotected = allMoves
             .Where(move => enemyTargets.Contains(move.StartSquare))
             .Where(move => !IsProtected(move, board)).OrderByDescending(move => pieceValues[(int)move.MovePieceType]).ToArray();
-
-
-        //Abschnitt, der die Dame ausser Gefahr bringen soll, wenn diese angegriffen wird
-        if(gegnerZiele.Length > 0)
-        {
-            var dameIstSicher = allMoves.Where(move => !board.SquareIsAttackedByOpponent(move.TargetSquare)).Where(move => pieceValues[(int)move.MovePieceType] == 900).ToArray();
-            foreach(Move move in dameIstSicher)
-            {
-                foreach(Move moveU in unprotected)
-                {
-                    if(move.TargetSquare.Name == moveU.StartSquare.Name)
-                    {
-                        return move;
-                    }
-                }
-                return dameIstSicher.FirstOrDefault();
-            }
-        }
-
+       
 
         if(!bestCapture.IsNull && IsWorthToTrade(bestCapture, unprotected.FirstOrDefault()) && !board.SquareIsAttackedByOpponent(bestCapture.TargetSquare))
         {
