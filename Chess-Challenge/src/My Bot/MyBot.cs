@@ -13,11 +13,8 @@ public class MyBot : IChessBot
     string[,] eroeffnung = new string[,] {  {"g1f3","b1c3","e2e4","d2d4","f1d3","c1e3","e1g1"} , {"g8f6", "b8c6","d7d5","e7e5","f8d6","c8e6","e8g8"}  };
     public Move Think(Board board, Timer timer)
     {
-        Move[] allMoves = board.GetLegalMoves();
-        Console.WriteLine(allMoves.Length);
-        //ToDo direkt alle rausfilter, die beim ziehen zu nem Draw führen würden, damit später nicht auf isDraw überprüft werden muss
-        allMoves = allMoves.Where(move => !board.IsDraw()).ToArray();
-        Console.WriteLine(allMoves.Length);
+        //Direkt alle rausfiltern, die beim Ziehen zu nem Draw führen würden, damit später nicht auf isDraw überprüft werden muss
+        Move[] allMoves = board.GetLegalMoves().Where(move => !board.IsDraw()).ToArray();
 
         //Array mit möglichen Zügen zum schlagen, wenn schlagen möglich ist, wird geschlagen
         Move[] captureMoves = board.GetLegalMoves(true);
@@ -32,9 +29,6 @@ public class MyBot : IChessBot
         ).FirstOrDefault();
 
 
-        //TODO Save attacked pieces
-        //Moves mit ungeschütztem StartSquare
-
         //Bildet ein Array aus Gegner Moves, die schlagen können
         board.MakeMove(bestCapture);
         var enemyTargets = board.GetLegalMoves(true).Select(move => move.TargetSquare).ToArray();
@@ -42,6 +36,7 @@ public class MyBot : IChessBot
         var gegnerZiele = board.GetLegalMoves(true).Where(move => pieceValues[(int)move.CapturePieceType] == 900).ToArray();
         if (board.TrySkipTurn()) board.UndoSkipTurn();
 
+        //Moves mit ungeschütztem StartSquare
         //Vergleicht unsere Legal Moves mit den SchlagMoves des Gegners und überprüft, ob diese Protected sind 
         var unprotected = allMoves
             .Where(move => enemyTargets.Contains(move.StartSquare))
@@ -82,28 +77,11 @@ public class MyBot : IChessBot
             //GegnerMoves
             Move[] neueMoves = board.GetLegalMoves();
             if(temp) board.UndoSkipTurn();
-//<<<<<<< Updated upstream //Hier villeicht sparen? ist das doppelt mit der foreach darunter?
 
             var hasMove = neueMoves
                 .Where(move => move.StartSquare.Name == neuerStartSquare)
                 .Where(move => unprotected.Select(u => u.StartSquare.Name).Contains(move.TargetSquare.Name))
                 .Any();
-//=======
-            foreach (Move movex in neueMoves)
-            {
-                if (movex.StartSquare.Name == neuerStartSquare)
-                {
-                    foreach (Move movez in unprotected)
-                    {
-                        if (movex.TargetSquare.Name == movez.StartSquare.Name && !board.SquareIsAttackedByOpponent(movey.TargetSquare) && !board.IsDraw())
-                        {
-                            board.UndoMove(movey);
-                            return movey;
-                        }
-                    }
-                }
-            }
-//>>>>>>> Stashed changes
             board.UndoMove(movey);
             if (hasMove)
             {
@@ -140,7 +118,7 @@ public class MyBot : IChessBot
             boardTemp = board;
             Move[] gegnerMoves = board.GetLegalMoves();
             board.UndoMove(movex);
-            if (gegnerMoves.Length < laengeArrayGegnerMoves && !board.SquareIsAttackedByOpponent(movex.TargetSquare) /*&& !board.IsRepeatedPosition()*/ && !boardTemp.IsDraw())
+            if (gegnerMoves.Length < laengeArrayGegnerMoves && !board.SquareIsAttackedByOpponent(movex.TargetSquare) && !boardTemp.IsDraw())
             {   
                 laengeArrayGegnerMoves = gegnerMoves.Length;
                 movetemp = movex;
@@ -168,11 +146,6 @@ public class MyBot : IChessBot
             return saveMoves[rng.Next(saveMoves.Length)];
         }
 
-        var movesRandomSafe = allMoves.Where(move => !board.SquareIsAttackedByOpponent(move.TargetSquare)).Where(move => !board.IsDraw()).ToArray();
-        if(movesRandomSafe.Length > 0)
-        {
-            return movesRandomSafe[rng.Next(movesRandomSafe.Length)];
-        }
         return allMoves[rng.Next(allMoves.Length)];
     }
 
@@ -206,6 +179,7 @@ public class MyBot : IChessBot
         }
         return false;
     }
+
     bool isWorthToTrade(Move bestCapture, Move isAttacked)
     {
         int valueBestCapture = pieceValues[(int)bestCapture.CapturePieceType];
