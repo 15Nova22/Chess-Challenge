@@ -154,7 +154,8 @@ public class MyBot : IChessBot
             return saveMoves[rng.Next(saveMoves.Length)];
         }
 
-        return allMoves[rng.Next(allMoves.Length)];
+        var fallback = board.GetLegalMoves();
+        return fallback[rng.Next(fallback.Length)];
     }
 
     /// <summary>
