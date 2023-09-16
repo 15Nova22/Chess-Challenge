@@ -60,7 +60,7 @@ public class MyBot : IChessBot
                     }
                     board.UndoMove(move);
                 }
-                return dameIstSicher.FirstOrDefault();
+                if(dameIstSicher.Length > 0) return dameIstSicher.FirstOrDefault();
             }
         }
 
@@ -99,7 +99,7 @@ public class MyBot : IChessBot
         var protectedTargetSquare = unprotected
             .Where(move => !board.SquareIsAttackedByOpponent(move.TargetSquare)).FirstOrDefault();
 
-        if (!protectedTargetSquare.IsNull && !board.IsDraw()) return protectedTargetSquare;
+        if (!protectedTargetSquare.IsNull) return protectedTargetSquare;
 
 
         //Routine für Rochade, fester Ablauf, je nach Farbe
