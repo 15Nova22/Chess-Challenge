@@ -8,41 +8,43 @@ using System.Linq;
 public class MyBot : IChessBot
 {
     // Piece values: null, pawn, knight, bishop, rook, queen, king
-    int[] pieceValues = { 0, 100, 300, 300, 500, 900, 10000 };
+    readonly int[] pieceValues = { 0, 100, 300, 300, 500, 900, 10000 };
     int counterRochade = 0;
-    string[,] eroeffnung = new string[,] {  {"g1f3","b1c3","e2e4","d2d4","f1d3","c1e3","e1g1"} , {"g8f6", "b8c6","d7d5","e7e5","f8d6","c8e6","e8g8"}  };
+    readonly string[,] opening = new string[,] {  {"g1f3","b1c3","e2e4","d2d4","f1d3","c1e3","e1g1"} , {"g8f6", "b8c6","d7d5","e7e5","f8d6","c8e6","e8g8"}  };
     public Move Think(Board board, Timer timer)
     {
-        Move[] allMoves = board.GetLegalMoves();
-        //ToDo direkt alle rausfilter, die beim ziehen zu nem Draw führen würden, damit später nicht auf isDraw überprüft werden muss
-        allMoves = allMoves.Where(move => {
-            board.MakeMove(move); 
-            var isNotDraw = !board.IsDraw(); 
-            board.UndoMove(move); 
-            return isNotDraw; 
-        })
-        .ToArray();
+        //Filter all Moves, that do not end in draw
+        Move[] allMoves = board.GetLegalMoves()
+            .Where(move => {
+                board.MakeMove(move); 
+                var isNotDraw = !board.IsDraw(); 
+                board.UndoMove(move); 
+                return isNotDraw; 
+            })
+            .ToArray();
 
-        //Array mit möglichen Zügen zum schlagen, wenn schlagen möglich ist, wird geschlagen
+        if (allMoves.Length == 0) return board.GetLegalMoves().First();
+
+        //All possible moves, that can capture.
         Move[] captureMoves = board.GetLegalMoves(true);
 
-        //Alle Züge zum Schlagen Sortiert nach ihrem Wert Unterschied
+        //Order capture moves by value difference
         Move bestCapture = captureMoves
-            //Nur positive Trades nehmen
+            //Nur trade up
             .Where(move => TradeValue(board, move) > 0)
-            //Sortieren nach bestem Trade
+            //Order by best trade
             .OrderByDescending(move => TradeValue(board, move)
-        //Zug mit bestem Wertverhältnis nehmen
+        //Use best trade
         ).FirstOrDefault();
 
 
-        //Bildet ein Array aus Gegner Moves, die schlagen können
+        //Possible enemy counters
         board.MakeMove(bestCapture);
         var enemyTargets = board.GetLegalMoves(true).Select(move => move.TargetSquare).ToArray();
         Move[] gegnerStartAngriff = board.GetLegalMoves(true);
         board.UndoMove(bestCapture);
 
-        //Abschnitt, der die Dame ausser Gefahr bringen sollen
+        //Save queen if under attack
         if (board.TrySkipTurn())
         {
             var gegnerDamenZiele = board.GetLegalMoves(true).Where(move => pieceValues[(int)move.CapturePieceType] == 900).ToArray();
@@ -64,8 +66,8 @@ public class MyBot : IChessBot
             }
         }
 
-        //Moves mit ungeschütztem StartSquare
-        //Vergleicht unsere Legal Moves mit den SchlagMoves des Gegners und überprüft, ob diese Protected sind 
+        //Moves that have an unprotected start square
+        //Compares if the moves are protected in a positive trade
         var unprotected = allMoves
             .Where(move => enemyTargets.Contains(move.StartSquare))
             .Where(move => !IsProtected(move, board)).OrderByDescending(move => pieceValues[(int)move.MovePieceType]).ToArray();
@@ -76,15 +78,13 @@ public class MyBot : IChessBot
             return bestCapture;
         }
 
-        //Moves machen, und dann gucken, ob der Move als neuen TargetSquare ein Square hat, das ein unprotected Square schützt
-        //altes targetsquare == neues startsquare, für das neue startsquare prüfen ob als targetsquare ein unprotected square ist
+        //Check if a move can additionally protect an unprotected square
         foreach (Move movey in allMoves)
         {
             string neuerStartSquare = movey.TargetSquare.Name;
             board.MakeMove(movey);
-            //Zug muss übersprungen werden, um unsere Moves zu kriegen
             bool temp = board.TrySkipTurn();
-            //GegnerMoves
+            //Enemy Moves
             Move[] neueMoves = board.GetLegalMoves();
             if(temp) board.UndoSkipTurn();
 
@@ -102,17 +102,17 @@ public class MyBot : IChessBot
         if (!protectedTargetSquare.IsNull) return protectedTargetSquare;
 
 
-        //Routine für Rochade, fester Ablauf, je nach Farbe
-        if (counterRochade < eroeffnung.GetLength(1)) {
-            //Hat eine Figur während der Rochade geschlagen und wird vom Gegner bedroht, wird der Zug zurückgenommen
+        //Rochade, fixed, per Color
+        if (counterRochade < opening.GetLength(1)) {
+            //Undo Move if it captured
             int farbe = board.IsWhiteToMove ? 0 : 1;
-            string code = eroeffnung[farbe, counterRochade];            
+            string code = opening[farbe, counterRochade];            
             Move moveRochade = allMoves.Where(move => move.StartSquare.Name == code.Substring(0, 2) && move.TargetSquare.Name == code.Substring(2, 2)).FirstOrDefault();
             counterRochade++;
             if(!moveRochade.IsNull) return moveRochade;
         }
 
-        //Zug der die Anzahl der Legal Moves des Gegners immer weiter verringert
+        //Prefer moves that reduce enemy moves
         Move movetemp = allMoves.FirstOrDefault();
         int laengeArrayGegnerMoves = 100000;
         Board boardTemp = board;
@@ -140,7 +140,7 @@ public class MyBot : IChessBot
         }
 
 
-        //Zufälliger Zug wenn sonst nichts machbar ist
+        //Random Move if nothing else can be done
         Random rng = new();
         var saveMoves = allMoves.Where(move => !board.SquareIsAttackedByOpponent(move.TargetSquare)).ToArray();
         if (saveMoves.Length > 0 && !board.IsDraw())
