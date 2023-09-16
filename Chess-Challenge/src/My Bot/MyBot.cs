@@ -73,7 +73,7 @@ public class MyBot : IChessBot
             .Where(move => !IsProtected(move, board)).OrderByDescending(move => pieceValues[(int)move.MovePieceType]).ToArray();
        
 
-        if(!bestCapture.IsNull && IsWorthToTrade(bestCapture, unprotected.FirstOrDefault()) && !board.SquareIsAttackedByOpponent(bestCapture.TargetSquare))
+        if (!bestCapture.IsNull && (IsWorthToTrade(bestCapture, unprotected.FirstOrDefault()) || !board.SquareIsAttackedByOpponent(bestCapture.TargetSquare)))
         {
             return bestCapture;
         }
@@ -142,7 +142,9 @@ public class MyBot : IChessBot
 
         //Random Move if nothing else can be done
         Random rng = new();
-        var saveMoves = allMoves.Where(move => !board.SquareIsAttackedByOpponent(move.TargetSquare)).ToArray();
+
+       var saveMoves = allMoves.Where(move => !board.SquareIsAttackedByOpponent(move.TargetSquare)).ToArray();
+
         if (saveMoves.Length > 0 && !board.IsDraw())
         {
             return saveMoves[rng.Next(saveMoves.Length)];
