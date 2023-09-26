@@ -30,7 +30,7 @@ public class MyBot : IChessBot
 
         //Order capture moves by value difference
         Move bestCapture = captureMoves
-            //Nur trade up
+            //Only trade up
             .Where(move => TradeValue(board, move) > 0)
             //Order by best trade
             .OrderByDescending(move => TradeValue(board, move)
@@ -113,11 +113,15 @@ public class MyBot : IChessBot
         }
 
         //Prefer moves that reduce enemy moves
-        Move mostReducingMove = allMoves.FirstOrDefault();
+        Move? mostReducingMove = null;
+        Move? mostReducingMoveBackup = null;
         int enemyMoveCount = 100000;
         Board boardTemp = board;
         foreach (Move potentialMove in allMoves)
         {
+            //If we can mate we do right away
+            if (pieceValues[(int)potentialMove.CapturePieceType] == 10000) return potentialMove;
+
             board.MakeMove(potentialMove);
             boardTemp = board;
             Move[] enemyMoves = board.GetLegalMoves();
@@ -125,20 +129,16 @@ public class MyBot : IChessBot
             if (enemyMoves.Length < enemyMoveCount && !board.SquareIsAttackedByOpponent(potentialMove.TargetSquare) && !boardTemp.IsDraw())
             {
                 enemyMoveCount = enemyMoves.Length;
-                mostReducingMove = potentialMove;
+                if(potentialMove.MovePieceType == PieceType.King)
+                    mostReducingMoveBackup = potentialMove;
+                else
+                    mostReducingMove = potentialMove;
 
-                //If we can mate we do right away
-                if (pieceValues[(int)potentialMove.CapturePieceType] == 10000)
-                {
-                    return potentialMove;
-                }
             }
         }
 
-        if (mostReducingMove != allMoves.FirstOrDefault() && !boardTemp.IsDraw())
-        {
-            return mostReducingMove;
-        }
+        if (mostReducingMove.HasValue && !boardTemp.IsDraw()) return mostReducingMove.Value;
+        if (mostReducingMoveBackup.HasValue && !boardTemp.IsDraw()) return mostReducingMoveBackup.Value;
 
 
         //Random Move if nothing else can be done
