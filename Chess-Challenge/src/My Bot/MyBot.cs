@@ -5,7 +5,7 @@ using System.Numerics;
 using System.Collections.Generic;
 using System.Linq;
 
-public class V2 : IChessBot
+public class MyBot : IChessBot
 {
     // Piece values: null, pawn, knight, bishop, rook, queen, king
     readonly int[] pieceValues = { 0, 100, 300, 300, 500, 900, 10000 };
@@ -41,7 +41,7 @@ public class V2 : IChessBot
         //Possible enemy counters
         board.MakeMove(bestCapture);
         var enemyTargets = board.GetLegalMoves(true).Select(move => move.TargetSquare).ToArray();
-        Move[] gegnerStartAngriff = board.GetLegalMoves(true);
+        Move[] enemyCounterMoves = board.GetLegalMoves(true);
         board.UndoMove(bestCapture);
 
         //Save queen if under attack

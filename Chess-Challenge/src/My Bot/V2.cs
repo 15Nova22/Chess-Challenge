@@ -5,7 +5,7 @@ using System.Numerics;
 using System.Collections.Generic;
 using System.Linq;
 
-public class MyBot : IChessBot
+public class V2 : IChessBot
 {
     // Piece values: null, pawn, knight, bishop, rook, queen, king
     readonly int[] pieceValues = { 0, 100, 300, 300, 500, 900, 10000 };
